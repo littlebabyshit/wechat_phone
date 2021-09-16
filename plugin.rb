@@ -11,7 +11,7 @@ require_dependency 'auth/oauth2_authenticator.rb'
 enabled_site_setting :oauth2_wechat_enabled
 
 class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
-  option :name, "oauth2_wechat_wechat_basic"
+  option :name, "oauth2_wechat_basic"
 
   uid do
     if path = SiteSetting.oauth2_wechat_callback_user_id_path.split('.')
@@ -347,4 +347,4 @@ end
 auth_provider title_setting: "oauth2_wechat_button_title",
               authenticator: OAuth2BasicAuthenticator.new
 
-load File.expand_path("../lib/validators/oauth2_basic/oauth2_wechat_fetch_user_details_validator.rb", __FILE__)
+load File.expand_path("../lib/validators/oauth2_basic/oauth2_fetch_user_details_validator.rb", __FILE__)
