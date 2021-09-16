@@ -6,21 +6,21 @@
 # authors: Robin Ward
 # url: https://github.com/discourse/discourse-oauth2-basic
 
-require_dependency 'auth/oauth2_authenticator.rb'
+require_dependency 'auth/oauth2_wechat_authenticator.rb'
 
-enabled_site_setting :oauth2_enabled
+enabled_site_setting :oauth2_wechat_enabled
 
 class ::OmniAuth::Strategies::Oauth2Basic < ::OmniAuth::Strategies::OAuth2
-  option :name, "oauth2_basic"
+  option :name, "oauth2_wechat_wechat_basic"
 
   uid do
-    if path = SiteSetting.oauth2_callback_user_id_path.split('.')
+    if path = SiteSetting.oauth2_wechat_callback_user_id_path.split('.')
       recurse(access_token, [*path]) if path.present?
     end
   end
 
   info do
-    if paths = SiteSetting.oauth2_callback_user_info_paths.split('|')
+    if paths = SiteSetting.oauth2_wechat_callback_user_info_paths.split('|')
       result = Hash.new
       paths.each do |p|
         segments = p.split(':')
@@ -137,11 +137,11 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   end
 
   def can_revoke?
-    SiteSetting.oauth2_allow_association_change
+    SiteSetting.oauth2_wechat_allow_association_change
   end
 
   def can_connect_existing_user?
-    SiteSetting.oauth2_allow_association_change
+    SiteSetting.oauth2_wechat_allow_association_change
   end
 
   def register_middleware(omniauth)
@@ -149,38 +149,38 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
                       name: name,
                       setup: lambda { |env|
                         opts = env['omniauth.strategy'].options
-                        opts[:client_id] = SiteSetting.oauth2_client_id
-                        opts[:client_secret] = SiteSetting.oauth2_client_secret
-                        opts[:provider_ignores_state] = SiteSetting.oauth2_disable_csrf
+                        opts[:client_id] = SiteSetting.oauth2_wechat_client_id
+                        opts[:client_secret] = SiteSetting.oauth2_wechat_client_secret
+                        opts[:provider_ignores_state] = SiteSetting.oauth2_wechat_disable_csrf
                         opts[:client_options] = {
-                          authorize_url: SiteSetting.oauth2_authorize_url,
-                          token_url: SiteSetting.oauth2_token_url,
-                          token_method: SiteSetting.oauth2_token_url_method.downcase.to_sym
+                          authorize_url: SiteSetting.oauth2_wechat_authorize_url,
+                          token_url: SiteSetting.oauth2_wechat_token_url,
+                          token_method: SiteSetting.oauth2_wechat_token_url_method.downcase.to_sym
                         }
-                        opts[:authorize_options] = SiteSetting.oauth2_authorize_options.split("|").map(&:to_sym)
+                        opts[:authorize_options] = SiteSetting.oauth2_wechat_authorize_options.split("|").map(&:to_sym)
 
-                        if SiteSetting.oauth2_authorize_signup_url.present? &&
+                        if SiteSetting.oauth2_wechat_authorize_signup_url.present? &&
                             ActionDispatch::Request.new(env).params["signup"].present?
-                          opts[:client_options][:authorize_url] = SiteSetting.oauth2_authorize_signup_url
+                          opts[:client_options][:authorize_url] = SiteSetting.oauth2_wechat_authorize_signup_url
                         end
 
-                        if SiteSetting.oauth2_send_auth_header? && SiteSetting.oauth2_send_auth_body?
+                        if SiteSetting.oauth2_wechat_send_auth_header? && SiteSetting.oauth2_wechat_send_auth_body?
                           # For maximum compatibility we include both header and body auth by default
                           # This is a little unusual, and utilising multiple authentication methods
                           # is technically disallowed by the spec (RFC2749 Section 5.2)
                           opts[:client_options][:auth_scheme] = :request_body
                           opts[:token_params] = { headers: { 'Authorization' => basic_auth_header } }
-                        elsif SiteSetting.oauth2_send_auth_header?
+                        elsif SiteSetting.oauth2_wechat_send_auth_header?
                           opts[:client_options][:auth_scheme] = :basic_auth
                         else
                           opts[:client_options][:auth_scheme] = :request_body
                         end
 
-                        unless SiteSetting.oauth2_scope.blank?
-                          opts[:scope] = SiteSetting.oauth2_scope
+                        unless SiteSetting.oauth2_wechat_scope.blank?
+                          opts[:scope] = SiteSetting.oauth2_wechat_scope
                         end
 
-                        if SiteSetting.oauth2_debug_auth && defined? OAuth2FaradayFormatter
+                        if SiteSetting.oauth2_wechat_debug_auth && defined? OAuth2FaradayFormatter
                           opts[:client_options][:connection_build] = lambda { |builder|
                             builder.response :logger, Rails.logger, { bodies: true, formatter: OAuth2FaradayFormatter }
 
@@ -193,7 +193,7 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   end
 
   def basic_auth_header
-    "Basic " + Base64.strict_encode64("#{SiteSetting.oauth2_client_id}:#{SiteSetting.oauth2_client_secret}")
+    "Basic " + Base64.strict_encode64("#{SiteSetting.oauth2_wechat_client_id}:#{SiteSetting.oauth2_wechat_client_secret}")
   end
 
   def walk_path(fragment, segments, seg_index = 0)
@@ -225,7 +225,7 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   end
 
   def json_walk(result, user_json, prop)
-    path = SiteSetting.public_send("oauth2_json_#{prop}_path")
+    path = SiteSetting.public_send("oauth2_wechat_json_#{prop}_path")
     if path.present?
       #this.[].that is the same as this.that, allows for both this[0].that and this.[0].that path styles
       path = path.gsub(".[].", ".").gsub(".[", "[")
@@ -258,12 +258,12 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   end
 
   def log(info)
-    Rails.logger.warn("OAuth2 Debugging: #{info}") if SiteSetting.oauth2_debug_auth
+    Rails.logger.warn("OAuth2 Debugging: #{info}") if SiteSetting.oauth2_wechat_debug_auth
   end
 
   def fetch_user_details(token, id)
-    user_json_url = SiteSetting.oauth2_user_json_url.sub(':token', token.to_s).sub(':id', id.to_s)
-    user_json_method = SiteSetting.oauth2_user_json_url_method
+    user_json_url = SiteSetting.oauth2_wechat_user_json_url.sub(':token', token.to_s).sub(':id', id.to_s)
+    user_json_method = SiteSetting.oauth2_wechat_user_json_url_method
 
     log("user_json_url: #{user_json_method} #{user_json_url}")
 
@@ -299,7 +299,7 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   def primary_email_verified?(auth)
     log("primary_email_verified: \n\ncreds: #{auth['info']['email_verified']}")
 
-    return true if SiteSetting.oauth2_email_verified
+    return true if SiteSetting.oauth2_wechat_email_verified
     verified = auth['info']['email_verified']
     verified = true if verified == "true"
     verified = false if verified == "false"
@@ -307,13 +307,13 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   end
 
   def always_update_user_email?
-    SiteSetting.oauth2_overrides_email
+    SiteSetting.oauth2_wechat_overrides_email
   end
 
   def after_authenticate(auth, existing_account: nil)
     log("after_authenticate response: \n\ncreds: #{auth['credentials'].to_hash}\nuid: #{auth['uid']}\ninfo: #{auth['info'].to_hash}\nextra: #{auth['extra'].to_hash}")
 
-    if SiteSetting.oauth2_fetch_user_details?
+    if SiteSetting.oauth2_wechat_fetch_user_details?
         log("after_authenticate response: \n\ncreds: #{auth['credentials']['token']}\nuid: #{auth['uid']}")
         log("after_authenticate response: \n\nnuid: #{auth['uid']}")
 
@@ -340,11 +340,11 @@ class ::OAuth2BasicAuthenticator < Auth::ManagedAuthenticator
   end
 
   def enabled?
-    SiteSetting.oauth2_enabled
+    SiteSetting.oauth2_wechat_enabled
   end
 end
 
-auth_provider title_setting: "oauth2_button_title",
+auth_provider title_setting: "oauth2_wechat_button_title",
               authenticator: OAuth2BasicAuthenticator.new
 
-load File.expand_path("../lib/validators/oauth2_basic/oauth2_fetch_user_details_validator.rb", __FILE__)
+load File.expand_path("../lib/validators/oauth2_basic/oauth2_wechat_fetch_user_details_validator.rb", __FILE__)

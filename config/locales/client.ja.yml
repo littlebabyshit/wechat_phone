@@ -7,5 +7,5 @@
 ja:
   js:
     login:
-      oauth2_basic:
+      oauth2_wechat_basic:
         name: "OAuth 2"
